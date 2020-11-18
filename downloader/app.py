@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import io
+import re
 import sys
 from datetime import timezone, datetime
 
@@ -8,8 +9,6 @@ from flask import Flask
 import requests
 import hmac
 from docx import Document
-from docx.shared import Inches
-import urllib
 
 
 
@@ -50,6 +49,8 @@ def webpage():
 
 
 def export_docx(product_list_response,image_size):
+    cleanr = re.compile('<.*?>')
+
     document = Document()
     grouped_by_title = {}
     for product in product_list_response.json():
@@ -60,21 +61,24 @@ def export_docx(product_list_response,image_size):
 
 
     for product_title in grouped_by_title:
+        document.add_heading(product_title,level=1)
 
         paragraph = document.add_paragraph()
+        description = re.sub(cleanr, '', grouped_by_title[product_title][0]['description'])
+        paragraph.add_run(description)
 
-
-        paragraph_run = paragraph.add_run()
-        paragraph_run.add_text(product_title).bold = True
-        paragraph_run.add_text(grouped_by_title[product_title][0]['description']).italics = True
-
+        document.add_paragraph().add_run("Varianty").bold = True
         for product in grouped_by_title[product_title]:
-            # image_url = product['photo_main'][image_size]
-            # image_response = requests.get(image_url, stream=True)
-            # image = io.BytesIO(image_response.content)
-            # paragraph_run.add_picture(image)
-            paragraph_run.add_text('\nTags: ' + product['keywords_tag'])
-            paragraph_run.add_text('\nColors: ' + product['colors'])
+            paragraph = document.add_paragraph()
+            image_url = product['photo_main'][image_size]
+            image_response = requests.get(image_url, stream=True)
+            image = io.BytesIO(image_response.content)
+            paragraph.add_run().add_picture(image)
+            paragraph.add_run('\nTags: ' + product['keywords_tag'])
+            paragraph.add_run('\nColors: ' + product['colors'])
+
+        document.add_page_break()
+
 
     document.save('demo.docx')
     # print(str(product_list_response.text))
