@@ -35,7 +35,7 @@ def webpage():
     exporter.set_custom_configurations(custom_configurations)
     missing_custom_data = exporter.export_docx(product_list_response, image_size)
     # print(str(missing_custom_data))
-    ExcelItemWriter().write_missing_items("custom_config/configuration.xlsx",missing_custom_data)
+    ExcelItemWriter().write_item_configurations("custom_config/configuration.xlsx", missing_custom_data)
     return "Here will be some content printed out eventually"
 
 
