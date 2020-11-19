@@ -1,91 +1,68 @@
 import base64
 import hashlib
-import io
-import re
 import sys
 from datetime import timezone, datetime
 
 from flask import Flask
 import requests
 import hmac
-from docx import Document
 
-
-
+from downloader.custom_excel_reader import CustomExcelReader
+from downloader.docx_exporter import DocxExporter
 
 app = Flask(__name__)
 
-username=""
-password=""
-
+username = ""
+password = ""
 
 
 @app.route("/")
 def webpage():
-    body = {"username":username, "pwd":password}
+    body = {"username": username, "pwd": password}
     auth = requests.post("https://www.fler.cz/api/rest/user/auth", json=body, verify=False,
-           allow_redirects=False)
+                         allow_redirects=False)
 
     secret_key = auth.json()['secret_key']
     session_id = auth.json()['session_id']
 
-    request_path = "/api/rest/seller/products/list"
-    auth_string = calculate_auth_string(request_path, secret_key, session_id)
-
-    headers = {"X-FLER-AUTHORIZATION": auth_string}
-    image_size='m' # options are m,s,b (medium, small, big)
-    url_args = "?fields=title,description,keywords_tag,photo_main,colors,keywords_mat,attr2&photo_main="+image_size
-
-    #styl ??? attr2...
-    #klicova slova
-    #material
-    #barvy
-
-    product_list_response = api_get(headers, request_path, url_args)
+    custom_configurations = CustomExcelReader().read_configuration("custom_config/configuration.xlsx")
+    image_size, product_list_response = get_product_list(secret_key, session_id)
+    colors = get_colors(secret_key, session_id)
     # print(str(product_list_response.text))
-    export_docx(product_list_response,image_size)
+    exporter = DocxExporter()
+    exporter.set_colors_list(colors)
+    exporter.set_custom_configurations(custom_configurations)
+    exporter.export_docx(product_list_response, image_size)
 
     return "Here will be some content printed out eventually"
 
 
-def export_docx(product_list_response,image_size):
-    cleanr = re.compile('<.*?>')
-
-    document = Document()
-    grouped_by_title = {}
-    for product in product_list_response.json():
-        if product['title'] in grouped_by_title:
-            grouped_by_title.get(product['title']).append(product)
-        else:
-            grouped_by_title[product['title']] = [product]
-
-
-    for product_title in grouped_by_title:
-        document.add_heading(product_title,level=1)
-
-        paragraph = document.add_paragraph()
-        description = re.sub(cleanr, '', grouped_by_title[product_title][0]['description'])
-        paragraph.add_run(description)
-
-        document.add_paragraph().add_run("Varianty").bold = True
-        for product in grouped_by_title[product_title]:
-            paragraph = document.add_paragraph()
-            image_url = product['photo_main'][image_size]
-            image_response = requests.get(image_url, stream=True)
-            image = io.BytesIO(image_response.content)
-            paragraph.add_run().add_picture(image)
-            paragraph.add_run('\nTags: ' + product['keywords_tag'])
-            paragraph.add_run('\nColors: ' + product['colors'])
-
-        document.add_page_break()
+def get_product_list(secret_key, session_id):
+    request_path = "/api/rest/seller/products/list"
+    auth_string = calculate_auth_string(request_path, secret_key, session_id)
+    headers = {"X-FLER-AUTHORIZATION": auth_string}
+    image_size = 'm'  # options are m,s,b (medium, small, big)
+    url_args = "?fields=title,description,keywords_tag,photo_main,colors,keywords_mat&photo_main=" + image_size
+    # styl ??? attr2...
+    # klicova slova
+    # material
+    # barvy
+    product_list_response = api_get(headers, request_path, url_args)
+    return image_size, product_list_response
 
 
-    document.save('demo.docx')
-    # print(str(product_list_response.text))
+def get_colors(secret_key, session_id):
+    request_path = "/api/rest/shop/datalist/product/colors"
+    auth_string = calculate_auth_string(request_path, secret_key, session_id)
+    headers = {"X-FLER-AUTHORIZATION": auth_string}
+
+    color_list_response = api_get(headers, request_path)
+    return {item['id']: item['title'] for (item) in color_list_response.json()}
 
 
-def api_get(headers, request_path, url_args):
+def api_get(headers, request_path, url_args=""):
     return requests.get("https://www.fler.cz" + request_path + url_args, headers=headers)
+
 
 def calculate_auth_string(request_path, secret_key, session_id):
     timestamp = str(int(datetime.utcnow().replace(tzinfo=timezone.utc).timestamp()))
@@ -101,5 +78,3 @@ if __name__ == "__main__":
     password = args[1]
     webpage()
     # app.run('0.0.0.0',5002)
-
-
