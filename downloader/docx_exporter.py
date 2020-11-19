@@ -46,6 +46,7 @@ class DocxExporter:
                 else:
                     custom_configuration = CatalogItemConfiguration(product['id'])
                     custom_configuration.set_image(image)
+                    custom_configuration.set_image_url(image_url)
                     custom_configuration.set_title(product['title'])
                     missing_custom_data[product['id']] = custom_configuration
                 paragraph.add_run('\n\nKlicova slova:\n').bold = True

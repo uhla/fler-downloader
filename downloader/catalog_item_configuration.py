@@ -12,3 +12,6 @@ class CatalogItemConfiguration:
 
     def set_title(self, title):
         self.title = title
+
+    def set_image_url(self, image_url):
+        self.image_url = image_url

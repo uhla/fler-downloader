@@ -1,45 +1,30 @@
+from io import BytesIO
+
+import requests
 import xlrd
 import pandas
+import xlsxwriter
+
 from downloader.catalog_item_configuration import CatalogItemConfiguration
 
 
 class ExcelItemWriter:
 
     def write_missing_items(self, filename, missing_items={}):
-        writer = pandas.ExcelWriter(filename, engine='xlsxwriter')
+
+        #FIXME avoid overwriting existing data in existing config xls file (flush out everything or do some sort of copy first
+        workbook = xlsxwriter.Workbook('test.xlsx')
+        worksheet = workbook.add_worksheet()
+        i=2
         for item in missing_items.values():
-            frame_to_append = pandas.DataFrame([[item.title,item.id,'',item.internal_note]],columns=['Nazev','Katalog c.','Obrazek','Popisek'])
-            frame_to_append.to_excel(writer,index=False)
-            # workbook  = writer.book
-            worksheet = writer.sheets['Sheet1']
-            worksheet.insert_image('C10',  "xx", {'image_data': item.image.read()})
+            worksheet.set_column('C:C', 38)
+            worksheet.set_row(i-1, 200)
 
-        writer.save()
-        # data.to_excel(filename)
-        # print(str(data))
-        #
-        #
-        # workbook  = writer.book
-        # worksheet = writer.sheets['Sheet1']
-        #
-        # # Insert an image.
-        # worksheet.insert_image('D3', 'logo.png')
+            image_data = BytesIO(BytesIO(requests.get(item.image_url,stream=True).content).read())
+            worksheet.write('A'+str(i),item.title)
+            worksheet.write('B'+str(i),item.id)
+            worksheet.insert_image('C'+str(i),  item.image_url, {'image_data': image_data})
+            worksheet.write('D'+str(i),item.internal_note)
+            i=i+1
 
-# for cust in Unique_cust_list:
-#     :
-#     :
-#     ## insert the figure as image
-# worksheet.insert_image('E1', 'figSaved')
-#
-# writer.save()
-#
-        # customized_catalog_items = {}
-        # wb = xlrd.open_workbook(filename)
-        # sheet = wb.sheet_by_index(0)
-        #
-        # for row_number in range(1, sheet.nrows):
-        #     catalog_item = CatalogItemConfiguration(int(sheet.cell_value(row_number, 1)),
-        #                                             sheet.cell_value(row_number, 3))
-        #     customized_catalog_items[catalog_item.id] = catalog_item
-        #
-        # return customized_catalog_items
+        workbook.close()
