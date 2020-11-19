@@ -5,19 +5,15 @@ import sys
 from datetime import timezone, datetime
 
 import requests
-from flask import Flask
 
-from downloader.excel_item_reader import ExcelItemReader
 from downloader.docx_exporter import DocxExporter
+from downloader.excel_item_reader import ExcelItemReader
 from downloader.excel_item_writer import ExcelItemWriter
-
-app = Flask(__name__)
 
 username = ""
 password = ""
 
 
-@app.route("/")
 def webpage():
     body = {"username": username, "pwd": password}
     auth = requests.post("https://www.fler.cz/api/rest/user/auth", json=body, verify=False,
@@ -79,4 +75,3 @@ if __name__ == "__main__":
     username = args[0]
     password = args[1]
     webpage()
-    # app.run('0.0.0.0',5002)
