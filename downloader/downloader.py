@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import sys
 from datetime import timezone, datetime
+from sys import exit
 
 import requests
 
@@ -75,7 +76,7 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     if len(args) < 2:
         print("Invalid input arguments")
-        print("Required format: app.py/exe <username> <password>")
+        print("Required format: downloader.py/exe <username> <password>")
         exit()
     username = args[0]
     password = args[1]
