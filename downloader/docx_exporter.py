@@ -11,6 +11,7 @@ from downloader.catalog_item_configuration import CatalogItemConfiguration
 class DocxExporter:
 
     def export_docx(self, product_list_response, image_size):
+        print("Starting docx export.")
         cleanr = re.compile('<.*?>')
         catalog_configurations_for_update = {}
         document = Document()
@@ -35,7 +36,8 @@ class DocxExporter:
 
             document.add_page_break()
 
-        document.save('demo.docx')
+        document.save('export.docx')
+        print("Docx export finished to file export.docx")
         return catalog_configurations_for_update
 
     def write_variant(self, catalog_configurations_for_update, document, image_size, product):

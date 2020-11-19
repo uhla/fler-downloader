@@ -7,6 +7,7 @@ import xlsxwriter
 class ExcelItemWriter:
 
     def write_item_configurations(self, filename, configs_to_save={}):
+        print("Writing updated customization data to file: " + filename)
         workbook = xlsxwriter.Workbook(filename)
         worksheet = workbook.add_worksheet()
         worksheet.set_column('A:B', 25)

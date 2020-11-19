@@ -14,24 +14,28 @@ username = ""
 password = ""
 
 
-def webpage():
+def download_and_export():
     body = {"username": username, "pwd": password}
     auth = requests.post("https://www.fler.cz/api/rest/user/auth", json=body, verify=False,
                          allow_redirects=False)
 
+    if 'secret_key' not in auth.json():
+        print("Invalid login credentials.")
+        exit()
+
     secret_key = auth.json()['secret_key']
     session_id = auth.json()['session_id']
 
-    custom_configurations = ExcelItemReader().read_configuration("custom_config/configuration.xlsx")
+    custom_configurations = ExcelItemReader().read_configuration("configuration.xlsx")
     image_size, product_list_response = get_product_list(secret_key, session_id)
     colors = get_colors(secret_key, session_id)
-    # print(str(product_list_response.text))
+
     exporter = DocxExporter()
     exporter.set_colors_list(colors)
     exporter.set_custom_configurations(custom_configurations)
     missing_custom_data = exporter.export_docx(product_list_response, image_size)
-    # print(str(missing_custom_data))
-    ExcelItemWriter().write_item_configurations("custom_config/configuration.xlsx", missing_custom_data)
+
+    ExcelItemWriter().write_item_configurations("configuration.xlsx", missing_custom_data)
     return "Here will be some content printed out eventually"
 
 
@@ -42,9 +46,6 @@ def get_product_list(secret_key, session_id):
     image_size = 'm'  # options are m,s,b (medium, small, big)
     url_args = "?fields=title,description,keywords_tag,photo_main,colors,keywords_mat&photo_main=" + image_size
     # styl ??? attr2...
-    # klicova slova
-    # material
-    # barvy
     product_list_response = api_get(headers, request_path, url_args)
     return image_size, product_list_response
 
@@ -72,6 +73,10 @@ def calculate_auth_string(request_path, secret_key, session_id):
 
 if __name__ == "__main__":
     args = sys.argv[1:]
+    if len(args) < 2:
+        print("Invalid input arguments")
+        print("Required format: app.py/exe <username> <password>")
+        exit()
     username = args[0]
     password = args[1]
-    webpage()
+    download_and_export()
