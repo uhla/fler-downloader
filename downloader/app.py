@@ -76,7 +76,7 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     if len(args) < 2:
         print("Invalid input arguments")
-        print("Required format: downloader.py/exe <username> <password>")
+        print("Required format: app.py|downloader.exe <username> <password>")
         exit()
     username = args[0]
     password = args[1]
