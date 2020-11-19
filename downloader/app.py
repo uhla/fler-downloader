@@ -1,14 +1,15 @@
 import base64
 import hashlib
+import hmac
 import sys
 from datetime import timezone, datetime
 
-from flask import Flask
 import requests
-import hmac
+from flask import Flask
 
-from downloader.custom_excel_reader import CustomExcelReader
+from downloader.excel_item_reader import ExcelItemReader
 from downloader.docx_exporter import DocxExporter
+from downloader.excel_item_writer import ExcelItemWriter
 
 app = Flask(__name__)
 
@@ -25,15 +26,16 @@ def webpage():
     secret_key = auth.json()['secret_key']
     session_id = auth.json()['session_id']
 
-    custom_configurations = CustomExcelReader().read_configuration("custom_config/configuration.xlsx")
+    custom_configurations = ExcelItemReader().read_configuration("custom_config/configuration.xlsx")
     image_size, product_list_response = get_product_list(secret_key, session_id)
     colors = get_colors(secret_key, session_id)
     # print(str(product_list_response.text))
     exporter = DocxExporter()
     exporter.set_colors_list(colors)
     exporter.set_custom_configurations(custom_configurations)
-    exporter.export_docx(product_list_response, image_size)
-
+    missing_custom_data = exporter.export_docx(product_list_response, image_size)
+    # print(str(missing_custom_data))
+    ExcelItemWriter().write_missing_items("custom_config/configuration.xlsx",missing_custom_data)
     return "Here will be some content printed out eventually"
 
 

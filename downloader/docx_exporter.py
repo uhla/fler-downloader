@@ -1,24 +1,18 @@
-import base64
-import hashlib
 import io
 import re
-import sys
-from datetime import timezone, datetime
 
-from docx.oxml.ns import qn
-from flask import Flask
 import requests
-import hmac
 from docx import Document
 from docx.shared import Cm
-from docx.enum.section import WD_SECTION_START
+
+from downloader.catalog_item_configuration import CatalogItemConfiguration
 
 
 class DocxExporter:
 
     def export_docx(self, product_list_response, image_size):
         cleanr = re.compile('<.*?>')
-
+        missing_custom_data = {}
         document = Document()
         grouped_by_title = {}
         for product in product_list_response.json():
@@ -49,6 +43,11 @@ class DocxExporter:
                 if product['id'] in self.custom_configurations:
                     paragraph.add_run("Poznamka: ").bold = True
                     paragraph.add_run(self.custom_configurations[product['id']].internal_note)
+                else:
+                    custom_configuration = CatalogItemConfiguration(product['id'])
+                    custom_configuration.set_image(image)
+                    custom_configuration.set_title(product['title'])
+                    missing_custom_data[product['id']] = custom_configuration
                 paragraph.add_run('\n\nKlicova slova:\n').bold = True
                 paragraph.add_run(", ".join(product['keywords_tag'].split(",")))
                 paragraph.add_run('\nMaterial:\n').bold = True
@@ -61,6 +60,7 @@ class DocxExporter:
             document.add_page_break()
 
         document.save('demo.docx')
+        return missing_custom_data
 
     def set_colors_list(self, colors):
         self.colors = colors
