@@ -5,7 +5,7 @@ import requests
 from docx import Document
 from docx.shared import Cm
 
-from downloader.catalog_item_configuration import CatalogItemConfiguration
+from downloader.catalog_item_configuration import CustomizedCatalogItem
 
 
 class DocxExporter:
@@ -13,7 +13,7 @@ class DocxExporter:
     def export_docx(self, product_list_response, image_size):
         print("Starting docx export.")
         cleanr = re.compile('<.*?>')
-        catalog_configurations_for_update = {}
+        customized_catalog_items = {}
         document = Document()
         grouped_by_title = {}
         for product in product_list_response.json():
@@ -29,18 +29,35 @@ class DocxExporter:
             description = re.sub(cleanr, '', grouped_by_title[product_title][0]['description'])
             paragraph.add_run(description)
 
+            short_description = re.sub(cleanr, '', grouped_by_title[product_title][0]['description_short'])
+            paragraph = document.add_paragraph()
+            paragraph.add_run("Kratky popis: ").bold = True
+            paragraph.add_run(short_description)
+
+            paragraph = document.add_paragraph()
+            paragraph.add_run("Cena: ").bold = True
+            paragraph.add_run(str(grouped_by_title[product_title][0]['price']) + ' CZK')
+
             document.add_paragraph().add_run("Varianty").bold = True
 
             for product in grouped_by_title[product_title]:
-                self.write_variant(catalog_configurations_for_update, document, image_size, product)
+                customized_catalog_items[product['id']] = self.write_variant(document, image_size, product)
 
             document.add_page_break()
 
         document.save('export.docx')
         print("Docx export finished to file export.docx")
-        return catalog_configurations_for_update
+        return customized_catalog_items
 
-    def write_variant(self, catalog_configurations_for_update, document, image_size, product):
+    def write_variant(self, document, image_size, product):
+        customized_write = False
+        if product['id'] in self.custom_configurations:
+            customized_catalog_item = self.custom_configurations[product['id']]
+            customized_write = True
+        else:
+            customized_catalog_item = CustomizedCatalogItem(product['id'])
+        customized_catalog_item.set_title(product['title'])
+
         table = document.add_table(cols=2, rows=1)
         image_url = product['photo_main'][image_size]
         image_response = requests.get(image_url, stream=True)
@@ -49,24 +66,30 @@ class DocxExporter:
         table.rows[0].cells[0].width = Cm(6.5)
         paragraph.add_run().add_picture(image, width=Cm(6.5))
         paragraph = table.rows[0].cells[1].paragraphs[0]
-        if product['id'] in self.custom_configurations:
-            paragraph.add_run("Poznamka: ").bold = True
-            paragraph.add_run(self.custom_configurations[product['id']].internal_note)
-            catalog_configuration_for_update = self.custom_configurations[product['id']]
-        else:
-            catalog_configuration_for_update = CatalogItemConfiguration(product['id'])
-        catalog_configuration_for_update.set_image(image)
-        catalog_configuration_for_update.set_image_url(image_url)
-        catalog_configuration_for_update.set_title(product['title'])
-        catalog_configurations_for_update[product['id']] = catalog_configuration_for_update
+        if customized_write:
+            paragraph.add_run("TYP: ").bold = True
+            paragraph.add_run(self.custom_configurations[product['id']].type)
+        customized_catalog_item.set_image(image)
+        customized_catalog_item.set_image_url(image_url)
+
+
         paragraph.add_run('\n\nKlicova slova:\n').bold = True
         paragraph.add_run(", ".join(product['keywords_tag'].split(",")))
+        if customized_write:
+            paragraph.add_run('\nStyly:\n').bold = True
+            paragraph.add_run(self.custom_configurations[product['id']].styles)
         paragraph.add_run('\nMaterial:\n').bold = True
         paragraph.add_run(", ".join(product['keywords_mat'].split(",")))
-        paragraph.add_run('\nBarvy:\n').bold = True
+        paragraph.add_run('\nBarvy hlavni:\n').bold = True
         paragraph.add_run(", ".join([self.colors[int(color)] for color in product['colors'].split(",")]))
+        if customized_write:
+            paragraph.add_run('\nBarvy vedlejsi:\n').bold = True
+            paragraph.add_run(self.custom_configurations[product['id']].other_colors)
+
         paragraph.add_run("\nKat. c.:\n").bold = True
         paragraph.add_run(str(product['id']))
+
+        return customized_catalog_item
 
     def set_colors_list(self, colors):
         self.colors = colors

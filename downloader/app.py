@@ -15,6 +15,8 @@ username = ""
 password = ""
 
 
+
+
 def download_and_export():
     body = {"username": username, "pwd": password}
     auth = requests.post("https://www.fler.cz/api/rest/user/auth", json=body, verify=False,
@@ -29,6 +31,7 @@ def download_and_export():
 
     custom_configurations = ExcelItemReader().read_configuration("configuration.xlsx")
     image_size, product_list_response = get_product_list(secret_key, session_id)
+
     colors = get_colors(secret_key, session_id)
 
     exporter = DocxExporter()
@@ -45,8 +48,7 @@ def get_product_list(secret_key, session_id):
     auth_string = calculate_auth_string(request_path, secret_key, session_id)
     headers = {"X-FLER-AUTHORIZATION": auth_string}
     image_size = 'm'  # options are m,s,b (medium, small, big)
-    url_args = "?fields=title,description,keywords_tag,photo_main,colors,keywords_mat&photo_main=" + image_size
-    # styl ??? attr2...
+    url_args = "?fields=title,description,keywords_tag,photo_main,colors,keywords_mat,description_short,price&photo_main=" + image_size
     product_list_response = api_get(headers, request_path, url_args)
     return image_size, product_list_response
 

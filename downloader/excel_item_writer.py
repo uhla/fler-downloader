@@ -12,12 +12,14 @@ class ExcelItemWriter:
         worksheet = workbook.add_worksheet()
         worksheet.set_column('A:B', 25)
         worksheet.set_column('D:D', 50)
-        worksheet.set_column('C:C', 38)
+        worksheet.set_column('C:F', 38)
 
         worksheet.write('A1', 'Nazev')
         worksheet.write('B1', 'Id')
         worksheet.write('C1', 'Obrazek')
-        worksheet.write('D1', 'Popis')
+        worksheet.write('D1', 'Typ')
+        worksheet.write('E1', 'Styly')
+        worksheet.write('F1', 'Vedlejsi barvy')
 
         i = 2
         for item in configs_to_save.values():
@@ -27,8 +29,10 @@ class ExcelItemWriter:
             worksheet.write('A' + str(i), item.title)
             worksheet.write('B' + str(i), item.id)
             worksheet.insert_image('C' + str(i), item.image_url, {'image_data': image_data})
-            worksheet.write('D' + str(i), item.internal_note)
+            worksheet.write('D' + str(i), item.type)
+            worksheet.write('E' + str(i), item.styles)
+            worksheet.write('F' + str(i), item.other_colors)
             i = i + 1
 
-        worksheet.autofilter("A1:D"+str(i-1))
+        worksheet.autofilter("A1:F"+str(i-1))
         workbook.close()
