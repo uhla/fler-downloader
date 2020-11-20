@@ -15,8 +15,6 @@ username = ""
 password = ""
 
 
-
-
 def download_and_export():
     body = {"username": username, "pwd": password}
     auth = requests.post("https://www.fler.cz/api/rest/user/auth", json=body, verify=False,
@@ -30,14 +28,13 @@ def download_and_export():
     session_id = auth.json()['session_id']
 
     custom_configurations = ExcelItemReader().read_configuration("configuration.xlsx")
-    image_size, product_list_response = get_product_list(secret_key, session_id)
-
+    image_size, product_list = get_product_list(secret_key, session_id)
     colors = get_colors(secret_key, session_id)
 
     exporter = DocxExporter()
     exporter.set_colors_list(colors)
     exporter.set_custom_configurations(custom_configurations)
-    missing_custom_data = exporter.export_docx(product_list_response, image_size)
+    missing_custom_data = exporter.export_docx(product_list, image_size)
 
     ExcelItemWriter().write_item_configurations("configuration.xlsx", missing_custom_data)
     return "Here will be some content printed out eventually"
@@ -48,9 +45,20 @@ def get_product_list(secret_key, session_id):
     auth_string = calculate_auth_string(request_path, secret_key, session_id)
     headers = {"X-FLER-AUTHORIZATION": auth_string}
     image_size = 'm'  # options are m,s,b (medium, small, big)
-    url_args = "?fields=title,description,keywords_tag,photo_main,colors,keywords_mat,description_short,price&photo_main=" + image_size
-    product_list_response = api_get(headers, request_path, url_args)
-    return image_size, product_list_response
+    limit = 25
+    url_args = "?fields=title,description,keywords_tag,photo_main,colors,keywords_mat,description_short,price&photo_main=" + image_size + "&limit=" + str(limit)
+
+    product_list_page = api_get(headers, request_path, url_args)
+    product_list = product_list_page.json()
+    page_number = 1
+
+    while len(product_list_page.json()) == limit:
+        offset = page_number * limit
+        product_list_page = api_get(headers, request_path, url_args + "&offset=" + str(offset))
+        product_list = product_list + product_list_page.json()
+        page_number = page_number + 1
+
+    return image_size, product_list
 
 
 def get_colors(secret_key, session_id):

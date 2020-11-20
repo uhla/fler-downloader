@@ -10,13 +10,13 @@ from downloader.catalog_item_configuration import CustomizedCatalogItem
 
 class DocxExporter:
 
-    def export_docx(self, product_list_response, image_size):
+    def export_docx(self, product_list, image_size):
         print("Starting docx export.")
         cleanr = re.compile('<.*?>')
         customized_catalog_items = {}
         document = Document()
         grouped_by_title = {}
-        for product in product_list_response.json():
+        for product in product_list:
             if product['title'] in grouped_by_title:
                 grouped_by_title.get(product['title']).append(product)
             else:
