@@ -58,7 +58,7 @@ class DocxExporter:
             customized_catalog_item = CustomizedCatalogItem(product['id'])
         customized_catalog_item.set_title(product['title'])
 
-        table = document.add_table(cols=2, rows=1)
+        table = document.add_table(cols=2, rows=1, style='Table Grid')
         image_url = product['photo_main'][image_size]
         image_response = requests.get(image_url, stream=True)
         image = io.BytesIO(image_response.content)
