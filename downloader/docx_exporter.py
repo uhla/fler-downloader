@@ -46,6 +46,7 @@ class DocxExporter:
             document.add_page_break()
 
         document.save('export.docx')
+        print("Exported total of " + str(len(product_list)) + "records.")
         print("Docx export finished to file export.docx")
         return customized_catalog_items
 
@@ -71,7 +72,6 @@ class DocxExporter:
             paragraph.add_run(self.custom_configurations[product['id']].type)
         customized_catalog_item.set_image(image)
         customized_catalog_item.set_image_url(image_url)
-
 
         paragraph.add_run('\n\nKlicova slova:\n').bold = True
         paragraph.add_run(", ".join(product['keywords_tag'].split(",")))
