@@ -10,6 +10,7 @@ import requests
 from downloader.docx_exporter import DocxExporter
 from downloader.excel_item_reader import ExcelItemReader
 from downloader.excel_item_writer import ExcelItemWriter
+from downloader.image_utils import ImageUtils
 
 username = ""
 password = ""
@@ -27,17 +28,20 @@ def download_and_export():
     secret_key = auth.json()['secret_key']
     session_id = auth.json()['session_id']
 
+    ImageUtils.create_img_tmp_folder()
+
     custom_configurations = ExcelItemReader().read_configuration("configuration.xlsx")
+
     image_size, product_list = get_product_list(secret_key, session_id)
     colors = get_colors(secret_key, session_id)
-
     exporter = DocxExporter()
     exporter.set_colors_list(colors)
     exporter.set_custom_configurations(custom_configurations)
     missing_custom_data = exporter.export_docx(product_list, image_size)
 
     ExcelItemWriter().write_item_configurations("configuration.xlsx", missing_custom_data)
-    return "Here will be some content printed out eventually"
+
+    ImageUtils.remove_img_tmp_folder()
 
 
 def get_product_list(secret_key, session_id):
@@ -46,7 +50,8 @@ def get_product_list(secret_key, session_id):
     headers = {"X-FLER-AUTHORIZATION": auth_string}
     image_size = 'm'  # options are m,s,b (medium, small, big)
     limit = 25
-    url_args = "?fields=title,description,keywords_tag,photo_main,colors,keywords_mat,description_short,price&photo_main=" + image_size + "&limit=" + str(limit)
+    url_args = "?fields=title,description,keywords_tag,photo_main,colors,keywords_mat,description_short,price&photo_main=" + image_size + "&limit=" + str(
+        limit)
 
     product_list_page = api_get(headers, request_path, url_args)
     product_list = product_list_page.json()

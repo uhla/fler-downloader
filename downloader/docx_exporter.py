@@ -6,6 +6,7 @@ from docx import Document
 from docx.shared import Cm
 
 from downloader.catalog_item_configuration import CustomizedCatalogItem
+from downloader.image_utils import ImageUtils
 
 
 class DocxExporter:
@@ -46,7 +47,7 @@ class DocxExporter:
             document.add_page_break()
 
         document.save('export.docx')
-        print("Exported total of " + str(len(product_list)) + "records.")
+        print("Exported total of " + str(len(product_list)) + " records.")
         print("Docx export finished to file export.docx")
         return customized_catalog_items
 
@@ -60,12 +61,15 @@ class DocxExporter:
         customized_catalog_item.set_title(product['title'])
 
         table = document.add_table(cols=2, rows=1, style='Table Grid')
+
         image_url = product['photo_main'][image_size]
         image_response = requests.get(image_url, stream=True)
         image = io.BytesIO(image_response.content)
+        ImageUtils.save_image_to_tmp_folder(image, product['id'])
         paragraph = table.rows[0].cells[0].paragraphs[0]
         table.rows[0].cells[0].width = Cm(6.5)
         paragraph.add_run().add_picture(image, width=Cm(6.5))
+
         paragraph = table.rows[0].cells[1].paragraphs[0]
         if customized_write:
             paragraph.add_run("TYP: ").bold = True
