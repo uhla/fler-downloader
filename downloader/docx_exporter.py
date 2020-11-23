@@ -58,7 +58,7 @@ class DocxExporter:
             customized_write = True
         else:
             customized_catalog_item = CustomizedCatalogItem(product['id'])
-        customized_catalog_item.set_title(product['title'])
+        customized_catalog_item.title = product['title']
 
         table = document.add_table(cols=2, rows=1, style='Table Grid')
 
@@ -74,8 +74,6 @@ class DocxExporter:
         if customized_write:
             paragraph.add_run("TYP: ").bold = True
             paragraph.add_run(self.custom_configurations[product['id']].type)
-        customized_catalog_item.set_image(image)
-        customized_catalog_item.set_image_url(image_url)
 
         paragraph.add_run('\n\nKlicova slova:\n').bold = True
         paragraph.add_run(", ".join(product['keywords_tag'].split(",")))

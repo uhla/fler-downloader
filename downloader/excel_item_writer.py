@@ -18,6 +18,7 @@ class ExcelItemWriter:
         worksheet.write('E1', 'Styly')
         worksheet.write('F1', 'Vedlejsi barvy')
 
+        wrapped_format = workbook.add_format({'text_wrap': True})
         i = 2
         for item in configs_to_save.values():
             worksheet.set_row(i - 1, 150)
@@ -25,9 +26,9 @@ class ExcelItemWriter:
             worksheet.write('A' + str(i), item.title)
             worksheet.write('B' + str(i), item.id)
             worksheet.insert_image('C' + str(i), "img_tmp/" + str(item.id) + ".jpg")
-            worksheet.write('D' + str(i), item.type)
-            worksheet.write('E' + str(i), item.styles)
-            worksheet.write('F' + str(i), item.other_colors)
+            worksheet.write('D' + str(i), item.type, wrapped_format)
+            worksheet.write('E' + str(i), item.styles, wrapped_format)
+            worksheet.write('F' + str(i), item.other_colors, wrapped_format)
             i = i + 1
 
         worksheet.autofilter("A1:F" + str(i - 1))
