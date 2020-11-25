@@ -41,8 +41,10 @@ class DocxExporter:
 
             document.add_paragraph().add_run("Varianty").bold = True
 
+            variant_no = 1
             for product in grouped_by_title[product_title]:
-                customized_catalog_items[product['id']] = self.write_variant(document, image_size, product)
+                customized_catalog_items[product['id']] = self.write_variant(document, image_size, product, variant_no)
+                variant_no += 1
 
             document.add_page_break()
 
@@ -51,7 +53,7 @@ class DocxExporter:
         print("Docx export finished to file export.docx")
         return customized_catalog_items
 
-    def write_variant(self, document, image_size, product):
+    def write_variant(self, document, image_size, product, variant_no):
         customized_write = False
         if product['id'] in self.custom_configurations:
             customized_catalog_item = self.custom_configurations[product['id']]
@@ -72,7 +74,7 @@ class DocxExporter:
 
         paragraph = table.rows[0].cells[1].paragraphs[0]
         if customized_write:
-            paragraph.add_run("TYP: ").bold = True
+            paragraph.add_run("TYP " + str(variant_no) + ": ").bold = True
             paragraph.add_run(self.custom_configurations[product['id']].type)
 
         paragraph.add_run('\n\nKlicova slova:\n').bold = True
