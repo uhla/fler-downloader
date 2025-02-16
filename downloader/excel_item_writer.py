@@ -9,14 +9,12 @@ class ExcelItemWriter:
         worksheet = workbook.add_worksheet()
         worksheet.set_column('A:B', 25)
         worksheet.set_column('C:C', 30)
-        worksheet.set_column('D:F', 38)
+        worksheet.set_column('D:D', 38)
 
         worksheet.write('A1', 'Nazev')
         worksheet.write('B1', 'Id')
         worksheet.write('C1', 'Obrazek')
         worksheet.write('D1', 'Typ')
-        worksheet.write('E1', 'Styly')
-        worksheet.write('F1', 'Vedlejsi barvy')
 
         wrapped_format = workbook.add_format({'text_wrap': True})
         i = 2
@@ -27,9 +25,7 @@ class ExcelItemWriter:
             worksheet.write('B' + str(i), item.id)
             worksheet.insert_image('C' + str(i), "img_tmp/" + str(item.id) + ".jpg")
             worksheet.write('D' + str(i), item.type, wrapped_format)
-            worksheet.write('E' + str(i), item.styles, wrapped_format)
-            worksheet.write('F' + str(i), item.other_colors, wrapped_format)
             i = i + 1
 
-        worksheet.autofilter("A1:F" + str(i - 1))
+        worksheet.autofilter("A1:D" + str(i - 1))
         workbook.close()

@@ -67,6 +67,7 @@ class DownloaderUI:
         try:
             Downloader(username, password, stop_event).download_and_export()
         except Exception as e:
+            # raise e # only for debugging purposes for complete call stack
             messagebox.showerror("Error", str(e))
             self.reset_ui()
 

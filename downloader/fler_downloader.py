@@ -30,10 +30,9 @@ class Downloader:
             customized_catalog_items = ExcelItemReader().read_configuration("configuration.xlsx")
 
             image_size, product_list = self.get_product_list()
-            colors = self.get_colors()
-            colors[0] = "Vícebarevné" # base API doesn't return multi-color as 0
+            colors = self.get_custom_categories()
             exporter = DocxExporter(self.stop_event)
-            exporter.set_colors_list(colors)
+            exporter.set_custom_category_list(colors)
             exporter.set_custom_configurations(customized_catalog_items)
             customized_catalog_items = exporter.export_docx(product_list, image_size)
 
@@ -49,7 +48,7 @@ class Downloader:
         headers = {"X-FLER-AUTHORIZATION": auth_string}
         image_size = 'm'  # options are m,s,b (medium, small, big)
         limit = 25
-        url_args = "?fields=title,description,keywords_tag,photo_main,colors,keywords_mat,description_short,price&photo_main=" + image_size + "&limit=" + str(
+        url_args = "?fields=title,description,keywords_tag,keywords_mat,keywords_tech,photo_main,colors,description_short,price,category,sellcategory,attr2_grouped&photo_main=" + image_size + "&limit=" + str(
             limit)
 
         product_list_page = self.api_get(headers, request_path, url_args)
@@ -64,13 +63,14 @@ class Downloader:
 
         return image_size, product_list
 
-    def get_colors(self):
-        request_path = "/api/rest/shop/datalist/product/colors"
+    def get_custom_categories(self):
+        # TODO possibly might need paging, but API doesn't specify it
+        request_path = "/api/rest/seller/shop/datalist/sellcategory"
         auth_string = self.calculate_auth_string(request_path)
         headers = {"X-FLER-AUTHORIZATION": auth_string}
 
-        color_list_response = self.api_get(headers, request_path)
-        return {item['id']: item['title'] for (item) in color_list_response.json()}
+        custom_category_response = self.api_get(headers, request_path)
+        return {item['id']: item['title'] for (item) in custom_category_response.json()}
 
     def api_get(self, headers, request_path, url_args=""):
         if self.stop_event.is_set():

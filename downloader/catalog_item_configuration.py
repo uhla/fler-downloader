@@ -1,10 +1,8 @@
 class CustomizedCatalogItem:
 
-    def __init__(self, id, title="", type="", styles="", other_colors=""):
+    def __init__(self, id, title="", type=""):
         self.id = id
         self.type = type
-        self.styles = styles
-        self.other_colors = other_colors
         self.title = title
 
     def __repr__(self):

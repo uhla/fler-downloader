@@ -9,6 +9,8 @@ from docx.shared import Cm
 from downloader.catalog_item_configuration import CustomizedCatalogItem
 from downloader.image_utils import ImageUtils
 
+NOT_SPECIFIED = "Nespecifikováno"
+
 
 class DocxExporter:
 
@@ -44,7 +46,11 @@ class DocxExporter:
 
             paragraph = document.add_paragraph()
             paragraph.add_run("Cena: ").bold = True
-            paragraph.add_run(str(grouped_by_title[product_title][0]['price']) + ' CZK')
+            paragraph.add_run(str(grouped_by_title[product_title][0]['price_without_prov']) + ' Kč (Fler: '
+                           + str(grouped_by_title[product_title][0]['price']) + ' Kč)')
+
+
+            self.print_category(grouped_by_title[product_title][0], document)
 
             document.add_paragraph().add_run("Varianty").bold = True
 
@@ -62,6 +68,16 @@ class DocxExporter:
         print("Docx export finished to file export.docx")
         return customized_catalog_items
 
+    def print_category(self, product, document):
+        # using custom category only (could be extended to use fler category (key category))
+        paragraph = document.add_paragraph()
+        paragraph.add_run("Kategorie: ").bold = True
+        custom_category_id = product['sellcategory']
+        if custom_category_id != '':
+            paragraph.add_run(self.custom_categories[int(custom_category_id)])
+        else:
+            paragraph.add_run(NOT_SPECIFIED)
+
     def write_variant(self, document, image_size, product, variant_no):
         print("Writing: " + product['title'] + " " + str(product['id']))
         customized_write = False
@@ -74,45 +90,67 @@ class DocxExporter:
 
         table = document.add_table(cols=2, rows=1, style='Table Grid')
 
-        image_url = product['photo_main'][image_size]
-        image_response = requests.get(image_url, stream=True)
-        image = io.BytesIO(image_response.content)
-        ImageUtils.save_image_to_tmp_folder(image, product['id'])
-        paragraph = table.rows[0].cells[0].paragraphs[0]
-        table.rows[0].cells[0].width = Cm(6.5)
-        paragraph.add_run().add_picture(image, width=Cm(6.5))
+        self.print_image(product, table.rows[0].cells[0], image_size)
 
         paragraph = table.rows[0].cells[1].paragraphs[0]
         if customized_write:
             paragraph.add_run("TYP " + str(variant_no) + ": ").bold = True
             paragraph.add_run(self.custom_configurations[product['id']].type)
 
-        paragraph.add_run('\n\nKlicova slova:\n').bold = True
-        if product['keywords_tag'] is not None:
-            paragraph.add_run(", ".join(product['keywords_tag'].split(",")))
-        else:
-            paragraph.add_run("Nespecifikováno")
-        if customized_write:
-            paragraph.add_run('\nStyly:\n').bold = True
-            paragraph.add_run(self.custom_configurations[product['id']].styles)
-        paragraph.add_run('\nMaterial:\n').bold = True
-        if product['keywords_mat'] is not None:
-            paragraph.add_run(", ".join(product['keywords_mat'].split(",")))
-        else:
-            paragraph.add_run("Nespecifikováno")
-        paragraph.add_run('\nBarvy hlavni:\n').bold = True
-        paragraph.add_run(", ".join([self.colors[int(color)] for color in product['colors'].split(",")]))
-        if customized_write:
-            paragraph.add_run('\nBarvy vedlejsi:\n').bold = True
-            paragraph.add_run(self.custom_configurations[product['id']].other_colors)
+        self.print_keywords(product, paragraph)
+        self.print_material(product, paragraph)
+        self.print_colors(product, paragraph)
 
-        paragraph.add_run("\nKat. c.:\n").bold = True
+        paragraph.add_run("\nKatalogové č.:\n").bold = True
         paragraph.add_run(str(product['id']))
 
         return customized_catalog_item
 
-    def set_colors_list(self, colors):
-        self.colors = colors
+    def set_custom_category_list(self, custom_categories):
+        self.custom_categories = custom_categories
 
     def set_custom_configurations(self, custom_configurations):
         self.custom_configurations = custom_configurations
+
+    def print_image(self, product, table_cell, image_size):
+        image_url = product['photo_main'][image_size]
+        image_response = requests.get(image_url, stream=True)
+        image = io.BytesIO(image_response.content)
+        ImageUtils.save_image_to_tmp_folder(image, product['id'])
+        paragraph = table_cell.paragraphs[0]
+        table_cell.width = Cm(6.5)
+        paragraph.add_run().add_picture(image, width=Cm(6.5))
+
+    def print_keywords(self, product, paragraph):
+        paragraph.add_run('\n\nKlíčová slova:\n').bold = True
+        if product['keywords_tag'] is not None:
+            paragraph.add_run(", ".join(product['keywords_tag'].split(",")))
+        else:
+            paragraph.add_run(NOT_SPECIFIED)
+
+    def print_material(self, product, paragraph):
+        # material is taken from keywords, but it could be taken from attr2 as well (keywords one is from custom worded tags, not predefined ones)
+        paragraph.add_run('\nMateriál:\n').bold = True
+        if product['keywords_mat'] is not None:
+            paragraph.add_run(", ".join(product['keywords_mat'].split(",")))
+        else:
+            paragraph.add_run(NOT_SPECIFIED)
+
+    def print_colors(self, product, paragraph):
+        grouped_attr = product['attr2_grouped']
+        if grouped_attr is not None:
+            main_colors = list(filter(lambda element: element['group_type_ident'] == 'attr2_color', grouped_attr))
+            paragraph.add_run('\nBarvy hlavní:\n').bold = True
+            if len(main_colors) > 0:
+                paragraph.add_run(",".join([item['ident'] for item in main_colors[0]['attr2']]))
+            else:
+                paragraph.add_run(NOT_SPECIFIED)
+            secondary_colors = list(filter(lambda element: element['group_type_ident'] == 'attr2_color_secondary', grouped_attr))
+            if len(secondary_colors) > 0:
+                secondary_colors_str = ", ".join([item['ident'] for item in secondary_colors[0]['attr2']])
+                if secondary_colors_str != "":
+                    paragraph.add_run('\nBarvy vedlejší:\n').bold = True
+                    paragraph.add_run(secondary_colors_str)
+
+
+
