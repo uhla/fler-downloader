@@ -5,11 +5,15 @@ import requests
 from docx import Document
 from docx.shared import Cm
 
+
 from downloader.catalog_item_configuration import CustomizedCatalogItem
 from downloader.image_utils import ImageUtils
 
 
 class DocxExporter:
+
+    def __init__(self, stop_event):
+        self.stop_event = stop_event
 
     def export_docx(self, product_list, image_size):
         print("Starting docx export.")
@@ -24,6 +28,9 @@ class DocxExporter:
                 grouped_by_title[product['title']] = [product]
 
         for product_title in grouped_by_title:
+            if (self.stop_event.is_set()):
+                raise InterruptedError("Export interrupted.")
+
             document.add_heading(product_title, level=1)
 
             paragraph = document.add_paragraph()
@@ -43,6 +50,8 @@ class DocxExporter:
 
             variant_no = 1
             for product in grouped_by_title[product_title]:
+                if (self.stop_event.is_set()):
+                    raise InterruptedError("Export interrupted.")
                 customized_catalog_items[product['id']] = self.write_variant(document, image_size, product, variant_no)
                 variant_no += 1
 
@@ -54,6 +63,7 @@ class DocxExporter:
         return customized_catalog_items
 
     def write_variant(self, document, image_size, product, variant_no):
+        print("Writing: " + product['title'] + " " + str(product['id']))
         customized_write = False
         if product['id'] in self.custom_configurations:
             customized_catalog_item = self.custom_configurations[product['id']]
@@ -78,12 +88,18 @@ class DocxExporter:
             paragraph.add_run(self.custom_configurations[product['id']].type)
 
         paragraph.add_run('\n\nKlicova slova:\n').bold = True
-        paragraph.add_run(", ".join(product['keywords_tag'].split(",")))
+        if product['keywords_tag'] is not None:
+            paragraph.add_run(", ".join(product['keywords_tag'].split(",")))
+        else:
+            paragraph.add_run("Nespecifikováno")
         if customized_write:
             paragraph.add_run('\nStyly:\n').bold = True
             paragraph.add_run(self.custom_configurations[product['id']].styles)
         paragraph.add_run('\nMaterial:\n').bold = True
-        paragraph.add_run(", ".join(product['keywords_mat'].split(",")))
+        if product['keywords_mat'] is not None:
+            paragraph.add_run(", ".join(product['keywords_mat'].split(",")))
+        else:
+            paragraph.add_run("Nespecifikováno")
         paragraph.add_run('\nBarvy hlavni:\n').bold = True
         paragraph.add_run(", ".join([self.colors[int(color)] for color in product['colors'].split(",")]))
         if customized_write:
