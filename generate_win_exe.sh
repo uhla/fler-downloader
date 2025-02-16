@@ -1,4 +1,4 @@
 #!/bin/bash
 
-pyinstaller --onefile downloader/app.py
+pyinstaller --onefile app.py
 mv dist/app.exe dist/downloader.exe

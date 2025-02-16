@@ -1,7 +1,5 @@
 import tkinter as tk
 
-from pyexpat.errors import messages
-
 from downloader.main_ui import DownloaderUI
 
 if __name__ == "__main__":
